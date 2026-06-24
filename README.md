@@ -4,7 +4,7 @@ Rust implementation prototype inspired by WonderTrader, focused on Binance USDâ“
 
 ## Current status
 
-Phase 0, Phase 1, and Phase 2 are implemented.
+Phase 0 through Phase 3 are implemented.
 
 ### Phase 0
 
@@ -13,7 +13,7 @@ The workspace contains the project skeleton and shared core domain types:
 - `wt-core`: symbols, intervals, market data, orders, positions, events, config, errors, and logging helpers.
 - `wt-market`: placeholder crate for Binance REST/WebSocket market data.
 - `wt-storage`: Arrow IPC/Feather v2 storage crate.
-- `wt-engine`: placeholder crate for CTA/SEL/HFT/UFT engines.
+- `wt-engine`: CTA/SEL/HFT/UFT engine crate; CTA is implemented first.
 - `wt-execution`: placeholder crate for execution adapters and routers.
 - `wt-backtest`: placeholder crate for event replay and matching.
 - `wt-report`: placeholder crate for metrics and reports.
@@ -38,6 +38,16 @@ The workspace contains the project skeleton and shared core domain types:
 - WebSocket combined-stream URL and stream-name generation.
 - WebSocket payload parsing for `aggTrade`, `kline`, and `bookTicker` events.
 - A WebSocket reader wrapper that yields normalized `wt-core::MarketEvent`s.
+
+### Phase 3
+
+`wt-engine` provides:
+
+- `CtaStrategy` callback trait.
+- `CtaContext` APIs for subscriptions, recent bar access, positions, and target-position signals.
+- `CtaEngine` event dispatch and rolling bar cache.
+- `MaCrossCtaStrategy` example with configurable symbol, interval, MA windows, and target quantity.
+- Unit tests for subscription registration, MA cross-up long signal, and MA cross-down short signal.
 
 ```bash
 cargo test
