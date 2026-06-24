@@ -1,0 +1,38 @@
+mode = "dry_run"
+
+[market]
+exchange = "binance_usdm"
+symbols = ["BTCUSDT", "ETHUSDT"]
+tick_stream = "agg_trade"
+kline_intervals = ["1m", "15m"]
+kline_source = "exchange"
+
+[storage]
+root = "data/live"
+format = "ipc_feather_v2"
+flush_rows = 10000
+flush_interval_secs = 5
+
+[execution]
+dry_run = true
+account_id = "dry-run"
+taker_fee_bps = 4.0
+slippage_bps = 1.0
+max_notional = "1000"
+allowed_symbols = ["BTCUSDT", "ETHUSDT"]
+
+[strategies.cta_ma_cross]
+symbol = "BTCUSDT"
+interval = "15m"
+fast = 5
+slow = 20
+target_qty = "0.001"
+
+[strategies.sel_momentum]
+symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"]
+interval = "15m"
+schedule = "every:4h"
+lookback_bars = 16
+long_count = 3
+short_count = 3
+notional_per_leg = "100"

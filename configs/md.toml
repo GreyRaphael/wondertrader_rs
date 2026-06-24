@@ -1,0 +1,18 @@
+mode = "dry_run"
+
+[market]
+exchange = "binance_usdm"
+symbols = ["BTCUSDT", "ETHUSDT"]
+tick_stream = "agg_trade"
+kline_intervals = ["1m", "15m"]
+kline_source = "exchange"
+
+[storage]
+root = "data/raw"
+format = "ipc_feather_v2"
+flush_rows = 10000
+flush_interval_secs = 5
+
+[execution]
+dry_run = true
+account_id = "md-recorder"

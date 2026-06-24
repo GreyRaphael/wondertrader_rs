@@ -1,0 +1,35 @@
+mode = "backtest"
+
+[market]
+exchange = "binance_usdm"
+symbols = ["BTCUSDT"]
+tick_stream = "agg_trade"
+kline_intervals = ["15m", "1d"]
+kline_source = "exchange"
+
+[storage]
+root = "data"
+format = "ipc_feather_v2"
+flush_rows = 10000
+flush_interval_secs = 5
+
+[execution]
+dry_run = true
+account_id = "backtest"
+taker_fee_bps = 4.0
+slippage_bps = 1.0
+
+[backtest]
+initial_balance = "10000"
+output_dir = "data/backtests"
+
+[report]
+periods_per_year = 365.0
+risk_free_rate = 0.0
+
+[strategies.cta_ma_cross]
+symbol = "BTCUSDT"
+interval = "15m"
+fast = 5
+slow = 20
+target_qty = "0.001"

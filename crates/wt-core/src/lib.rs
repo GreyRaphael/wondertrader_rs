@@ -13,7 +13,10 @@ pub mod order;
 pub mod time;
 pub mod types;
 
-pub use config::{AppConfig, EngineMode, MarketConfig, StorageConfig};
+pub use config::{
+    AppConfig, BacktestRunConfig, CtaMaCrossConfig, EngineMode, ExecutionConfig, MarketConfig,
+    ReportRunConfig, SelMomentumConfig, StorageConfig, StrategyConfigs,
+};
 pub use error::{Result, WtCoreError};
 pub use event::{MarketEvent, ScheduleEvent, SessionEvent, SessionEventKind};
 pub use market::{BookTicker, Kline, KlineInterval, Tick, TickSource};
