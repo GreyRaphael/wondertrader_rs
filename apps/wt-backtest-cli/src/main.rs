@@ -84,6 +84,7 @@ fn run_cta_ma_cross(config: &AppConfig, input_override: Option<&PathBuf>) -> any
             input_path.display()
         )
     })?;
+    let bar_count = klines.len();
     if klines.is_empty() {
         bail!(
             "no klines found in {} for {} {}",
@@ -117,7 +118,7 @@ fn run_cta_ma_cross(config: &AppConfig, input_override: Option<&PathBuf>) -> any
 
     println!(
         "backtest completed: bars={}, trades={}, equity_points={}, metrics={}",
-        result.equity.len(),
+        bar_count,
         result.trades.len(),
         result.equity.len(),
         metrics_path.display()
@@ -185,5 +186,98 @@ fn default_strategy(config: &AppConfig) -> &'static str {
         "sel-momentum"
     } else {
         "none"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rust_decimal::Decimal;
+    use std::str::FromStr;
+    use wt_core::{KlineInterval, Symbol};
+    use wt_storage::FeatherBatch;
+
+    #[test]
+    fn runs_cta_backtest_from_feather_and_writes_metrics() {
+        let base =
+            std::env::temp_dir().join(format!("wt-backtest-cli-test-{}", std::process::id()));
+        let input = base.join("klines.feather");
+        let output = base.join("out");
+        let klines = sample_klines();
+        Kline::write_feather(&input, &klines).unwrap();
+
+        let config: AppConfig = toml::from_str(&format!(
+            r#"
+            mode = "backtest"
+
+            [market]
+            exchange = "binance_usdm"
+            symbols = ["BTCUSDT"]
+            tick_stream = "agg_trade"
+            kline_intervals = ["15m"]
+
+            [storage]
+            root = "data"
+            format = "ipc_feather_v2"
+            flush_rows = 10000
+            flush_interval_secs = 5
+
+            [execution]
+            dry_run = true
+            account_id = "backtest"
+            taker_fee_bps = 4.0
+            slippage_bps = 0.0
+
+            [backtest]
+            initial_balance = "10000"
+            output_dir = "{}"
+
+            [report]
+            periods_per_year = 365.0
+            risk_free_rate = 0.0
+
+            [strategies.cta_ma_cross]
+            symbol = "BTCUSDT"
+            interval = "15m"
+            fast = 2
+            slow = 3
+            target_qty = "0.001"
+            "#,
+            output.display().to_string().replace('\\', "\\\\")
+        ))
+        .unwrap();
+
+        run_cta_ma_cross(&config, Some(&input)).unwrap();
+        assert!(output.join("metrics.json").exists());
+
+        let _ = std::fs::remove_dir_all(base);
+    }
+
+    fn sample_klines() -> Vec<Kline> {
+        [10, 9, 8, 9, 10, 11, 10, 9, 8]
+            .into_iter()
+            .enumerate()
+            .map(|(idx, close)| {
+                let ts = idx as i64 * 60_000_000_000;
+                let close = Decimal::from(close);
+                Kline {
+                    open_time: ts,
+                    close_time: ts + 60_000_000_000 - 1,
+                    symbol: Symbol::from("BTCUSDT"),
+                    interval: KlineInterval::M15,
+                    open: close,
+                    high: close,
+                    low: close,
+                    close,
+                    volume: Decimal::from_str("1").unwrap(),
+                    quote_volume: close,
+                    trade_count: 1,
+                    taker_buy_volume: Decimal::from_str("0.5").unwrap(),
+                    taker_buy_quote_volume: close / Decimal::from(2),
+                    is_final: true,
+                    source: "unit_test".to_owned(),
+                }
+            })
+            .collect()
     }
 }
