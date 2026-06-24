@@ -4,7 +4,7 @@ Rust implementation prototype inspired by WonderTrader, focused on Binance USDâ“
 
 ## Current status
 
-Phase 0 through Phase 7 are implemented.
+Phase 0 through Phase 8 are implemented.
 
 ### Phase 0
 
@@ -88,6 +88,15 @@ The workspace contains the project skeleton and shared core domain types:
 - `SymbolExecutionRules` for min quantity, step size, and min notional checks.
 - `DryRunExecutionAdapter` that records filled orders without touching real accounts.
 - Unit tests for precision normalization, order submission, and small-order filtering.
+
+### Phase 8
+
+`wt-engine` now exposes HFT/UFT extension interfaces:
+
+- `DirectOrderContext` for buy/sell/cancel/cancel-all direct order flows.
+- `HftStrategy` and `UftStrategy` callback traits.
+- Placeholder Level2 event types: order queue, order detail, and transaction events.
+- Unit test proving an HFT strategy can use the direct order context.
 
 ```bash
 cargo test

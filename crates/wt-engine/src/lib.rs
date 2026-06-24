@@ -11,7 +11,8 @@ use std::{
 use anyhow::Result;
 use rust_decimal::Decimal;
 use wt_core::{
-    Kline, KlineInterval, MarketEvent, ScheduleEvent, Symbol, TargetPosition, Tick, unix_ts_ns_now,
+    Kline, KlineInterval, MarketEvent, OrderId, ScheduleEvent, Symbol, TargetPosition, Tick,
+    TimeInForce, unix_ts_ns_now,
 };
 
 pub use wt_core::TargetPosition as EngineTargetPosition;
@@ -765,6 +766,114 @@ impl SelStrategy for MomentumRankSelStrategy {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct OrderBookLevel {
+    pub price: Decimal,
+    pub qty: Decimal,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct OrderQueueEvent {
+    pub ts_event: i64,
+    pub symbol: Symbol,
+    pub side: String,
+    pub levels: Vec<OrderBookLevel>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct OrderDetailEvent {
+    pub ts_event: i64,
+    pub symbol: Symbol,
+    pub order_id: String,
+    pub side: String,
+    pub price: Decimal,
+    pub qty: Decimal,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TransactionEvent {
+    pub ts_event: i64,
+    pub symbol: Symbol,
+    pub trade_id: String,
+    pub side: String,
+    pub price: Decimal,
+    pub qty: Decimal,
+}
+
+pub trait DirectOrderContext {
+    fn buy(
+        &mut self,
+        symbol: &Symbol,
+        price: Option<Decimal>,
+        qty: Decimal,
+        tif: TimeInForce,
+    ) -> Result<OrderId>;
+
+    fn sell(
+        &mut self,
+        symbol: &Symbol,
+        price: Option<Decimal>,
+        qty: Decimal,
+        tif: TimeInForce,
+    ) -> Result<OrderId>;
+
+    fn cancel(&mut self, order_id: &OrderId) -> Result<()>;
+
+    fn cancel_all(&mut self, symbol: &Symbol) -> Result<Vec<OrderId>>;
+}
+
+pub trait HftStrategy {
+    fn id(&self) -> &str;
+
+    fn on_init(&mut self, _ctx: &mut dyn DirectOrderContext) -> Result<()> {
+        Ok(())
+    }
+
+    fn on_tick(&mut self, _ctx: &mut dyn DirectOrderContext, _tick: &Tick) -> Result<()> {
+        Ok(())
+    }
+
+    fn on_order_queue(
+        &mut self,
+        _ctx: &mut dyn DirectOrderContext,
+        _event: &OrderQueueEvent,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    fn on_order_detail(
+        &mut self,
+        _ctx: &mut dyn DirectOrderContext,
+        _event: &OrderDetailEvent,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    fn on_transaction(
+        &mut self,
+        _ctx: &mut dyn DirectOrderContext,
+        _event: &TransactionEvent,
+    ) -> Result<()> {
+        Ok(())
+    }
+}
+
+pub trait UftStrategy {
+    fn id(&self) -> &str;
+
+    fn on_init(&mut self, _ctx: &mut dyn DirectOrderContext) -> Result<()> {
+        Ok(())
+    }
+
+    fn on_tick_fast(&mut self, _ctx: &mut dyn DirectOrderContext, _tick: &Tick) -> Result<()> {
+        Ok(())
+    }
+
+    fn on_params_updated(&mut self) -> Result<()> {
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -921,6 +1030,80 @@ mod tests {
         assert_eq!(target_by_symbol["BBBUSDT"], Decimal::ZERO);
         assert!(target_by_symbol["CCCUSDT"] < Decimal::ZERO);
         assert_eq!(target_by_symbol["DDDUSDT"], Decimal::ZERO);
+    }
+
+    #[test]
+    fn hft_strategy_can_use_direct_order_context() {
+        struct BuyOnTick;
+        impl HftStrategy for BuyOnTick {
+            fn id(&self) -> &str {
+                "buy_on_tick"
+            }
+
+            fn on_tick(&mut self, ctx: &mut dyn DirectOrderContext, tick: &Tick) -> Result<()> {
+                ctx.buy(&tick.symbol, Some(tick.price), tick.qty, TimeInForce::Ioc)?;
+                Ok(())
+            }
+        }
+
+        #[derive(Default)]
+        struct MockDirectContext {
+            order_count: usize,
+        }
+        impl DirectOrderContext for MockDirectContext {
+            fn buy(
+                &mut self,
+                _symbol: &Symbol,
+                _price: Option<Decimal>,
+                _qty: Decimal,
+                _tif: TimeInForce,
+            ) -> Result<OrderId> {
+                self.order_count += 1;
+                Ok(OrderId(format!("order-{}", self.order_count)))
+            }
+
+            fn sell(
+                &mut self,
+                _symbol: &Symbol,
+                _price: Option<Decimal>,
+                _qty: Decimal,
+                _tif: TimeInForce,
+            ) -> Result<OrderId> {
+                unreachable!()
+            }
+
+            fn cancel(&mut self, _order_id: &OrderId) -> Result<()> {
+                Ok(())
+            }
+
+            fn cancel_all(&mut self, _symbol: &Symbol) -> Result<Vec<OrderId>> {
+                Ok(Vec::new())
+            }
+        }
+
+        let mut strategy = BuyOnTick;
+        let mut ctx = MockDirectContext::default();
+        strategy.on_tick(&mut ctx, &tick()).unwrap();
+        assert_eq!(ctx.order_count, 1);
+    }
+
+    fn tick() -> Tick {
+        Tick {
+            ts_event: 1,
+            ts_recv: 1,
+            symbol: Symbol::from("BTCUSDT"),
+            source: wt_core::TickSource::AggTrade,
+            trade_id: Some(1),
+            price: Decimal::from(100),
+            qty: Decimal::ONE,
+            side: Some("buy".to_owned()),
+            bid_price: None,
+            bid_qty: None,
+            ask_price: None,
+            ask_qty: None,
+            is_recovered: false,
+            raw_seq: Some(1),
+        }
     }
 
     fn bar_event(idx: usize, close: &str) -> MarketEvent {
