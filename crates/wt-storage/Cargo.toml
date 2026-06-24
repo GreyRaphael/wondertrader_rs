@@ -8,4 +8,7 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+polars.workspace = true
+rust_decimal.workspace = true
+thiserror.workspace = true
 wt-core.workspace = true

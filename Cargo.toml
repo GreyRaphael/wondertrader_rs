@@ -22,6 +22,7 @@ rust-version = "1.88"
 
 [workspace.dependencies]
 anyhow = "1.0"
+polars = { version = "0.53", features = ["ipc", "is_in", "lazy", "parquet", "temporal"] }
 rust_decimal = { version = "1.39", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "2.0"
