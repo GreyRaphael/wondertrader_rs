@@ -4,7 +4,7 @@ Rust implementation prototype inspired by WonderTrader, focused on Binance USDâ“
 
 ## Current status
 
-Phase 0 through Phase 5 are implemented.
+Phase 0 through Phase 6 are implemented.
 
 ### Phase 0
 
@@ -69,6 +69,15 @@ The workspace contains the project skeleton and shared core domain types:
 - Linear futures-style portfolio accounting with realized/unrealized PnL and equity snapshots.
 - Trade and final-position outputs.
 - Unit tests for portfolio PnL and MA-cross CTA backtest execution.
+
+### Phase 6
+
+`wt-report` provides:
+
+- `compute_metrics` for equity/trade report metrics.
+- Total return, annualized return, annualized volatility, Sharpe ratio, max drawdown, Calmar ratio.
+- Win rate, profit factor, payoff ratio, average trade PnL, trade count, and total fees.
+- Serializable `MetricsSummary` and `ReportConfig`.
 
 ```bash
 cargo test
