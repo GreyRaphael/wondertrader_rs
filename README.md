@@ -4,7 +4,7 @@ Rust implementation prototype inspired by WonderTrader, focused on Binance USDâ“
 
 ## Current status
 
-Phase 0 through Phase 3 are implemented.
+Phase 0 through Phase 4 are implemented.
 
 ### Phase 0
 
@@ -48,6 +48,17 @@ The workspace contains the project skeleton and shared core domain types:
 - `CtaEngine` event dispatch and rolling bar cache.
 - `MaCrossCtaStrategy` example with configurable symbol, interval, MA windows, and target quantity.
 - Unit tests for subscription registration, MA cross-up long signal, and MA cross-down short signal.
+
+### Phase 4
+
+`wt-engine` also provides:
+
+- `SelStrategy` callback trait.
+- `SelContext` APIs for multi-symbol bar subscriptions, recent bar access, positions, and batch target-position signals.
+- `SelEngine` event dispatch and rolling bar cache.
+- `EveryIntervalScheduler` for simple interval-based schedule generation.
+- `MomentumRankSelStrategy` example for cross-sectional long/short momentum ranking.
+- Unit tests for SEL subscriptions and long/short/flat target generation.
 
 ```bash
 cargo test
