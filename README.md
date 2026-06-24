@@ -4,7 +4,7 @@ Rust implementation prototype inspired by WonderTrader, focused on Binance USDâ“
 
 ## Current status
 
-Phase 0 and Phase 1 are implemented.
+Phase 0, Phase 1, and Phase 2 are implemented.
 
 ### Phase 0
 
@@ -28,6 +28,16 @@ The workspace contains the project skeleton and shared core domain types:
 - Arrow IPC/Feather v2 write/read helpers.
 - Lazy IPC scan helpers with symbol/time/interval filters.
 - Partition path generation for `ticks` and `klines` datasets.
+
+### Phase 2
+
+`wt-market` provides:
+
+- Binance USDâ“ˆ-M REST client for `exchangeInfo`, `klines`, and `aggTrades`.
+- REST kline and aggregate trade normalization into `wt-core::Kline` and `wt-core::Tick`.
+- WebSocket combined-stream URL and stream-name generation.
+- WebSocket payload parsing for `aggTrade`, `kline`, and `bookTicker` events.
+- A WebSocket reader wrapper that yields normalized `wt-core::MarketEvent`s.
 
 ```bash
 cargo test

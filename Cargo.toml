@@ -22,11 +22,17 @@ rust-version = "1.88"
 
 [workspace.dependencies]
 anyhow = "1.0"
+futures-util = "0.3"
 polars = { version = "0.53", features = ["ipc", "is_in", "lazy", "parquet", "temporal"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 rust_decimal = { version = "1.39", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 thiserror = "2.0"
+tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "time"] }
+tokio-tungstenite = { version = "0.28", features = ["rustls-tls-webpki-roots"] }
 toml = "0.9"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt"] }
+url = "2.5"
 wt-core = { path = "crates/wt-core" }
