@@ -20,6 +20,7 @@ taker_fee_bps = 4.0
 slippage_bps = 1.0
 
 [backtest]
+input_path = "data/raw/klines/interval=15m/date=2026-01-01/symbol=BTCUSDT/part-000.feather"
 initial_balance = "10000"
 output_dir = "data/backtests"
 

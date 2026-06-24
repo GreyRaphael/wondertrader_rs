@@ -110,6 +110,8 @@ pub struct BacktestRunConfig {
     pub start_ts: Option<i64>,
     #[serde(default)]
     pub end_ts: Option<i64>,
+    #[serde(default)]
+    pub input_path: Option<String>,
     #[serde(default = "default_initial_balance")]
     pub initial_balance: Decimal,
     #[serde(default = "default_backtest_output_dir")]

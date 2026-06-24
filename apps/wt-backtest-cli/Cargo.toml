@@ -10,8 +10,11 @@ rust-version.workspace = true
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
+rust_decimal.workspace = true
+serde_json.workspace = true
 toml.workspace = true
 wt-backtest = { path = "../../crates/wt-backtest" }
 wt-core.workspace = true
 wt-engine = { path = "../../crates/wt-engine" }
 wt-report = { path = "../../crates/wt-report" }
+wt-storage = { path = "../../crates/wt-storage" }

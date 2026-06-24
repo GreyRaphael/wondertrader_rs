@@ -10,9 +10,9 @@ use std::{
 };
 
 use polars::prelude::*;
-use rust_decimal::Decimal;
+use rust_decimal::{Decimal, prelude::FromPrimitive};
 use thiserror::Error;
-use wt_core::{Kline, KlineInterval, Tick, TickSource};
+use wt_core::{Kline, KlineInterval, Symbol, Tick, TickSource};
 
 pub const STORAGE_FORMAT: &str = "ipc_feather_v2";
 
@@ -28,6 +28,9 @@ pub enum StorageError {
 
     #[error("invalid path: {0}")]
     InvalidPath(PathBuf),
+
+    #[error("invalid value in column {column}: {value}")]
+    InvalidValue { column: &'static str, value: String },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -276,6 +279,70 @@ pub fn scan_klines(
     Ok(lf)
 }
 
+pub fn read_klines_ipc(
+    path: impl AsRef<Path>,
+    symbols: &[&str],
+    interval: Option<KlineInterval>,
+    start_open_time: Option<i64>,
+    end_open_time: Option<i64>,
+) -> StorageResult<Vec<Kline>> {
+    let df = scan_klines(path, symbols, interval, start_open_time, end_open_time)?.collect()?;
+    dataframe_to_klines(&df)
+}
+
+pub fn dataframe_to_klines(df: &DataFrame) -> StorageResult<Vec<Kline>> {
+    let open_time = df.column(schema::kline::OPEN_TIME)?.i64()?;
+    let close_time = df.column(schema::kline::CLOSE_TIME)?.i64()?;
+    let symbol = df.column(schema::kline::SYMBOL)?.str()?;
+    let interval = df.column(schema::kline::INTERVAL)?.str()?;
+    let open = df.column(schema::kline::OPEN)?.f64()?;
+    let high = df.column(schema::kline::HIGH)?.f64()?;
+    let low = df.column(schema::kline::LOW)?.f64()?;
+    let close = df.column(schema::kline::CLOSE)?.f64()?;
+    let volume = df.column(schema::kline::VOLUME)?.f64()?;
+    let quote_volume = df.column(schema::kline::QUOTE_VOLUME)?.f64()?;
+    let trade_count = df.column(schema::kline::TRADE_COUNT)?.i64()?;
+    let taker_buy_volume = df.column(schema::kline::TAKER_BUY_VOLUME)?.f64()?;
+    let taker_buy_quote_volume = df.column(schema::kline::TAKER_BUY_QUOTE_VOLUME)?.f64()?;
+    let is_final = df.column(schema::kline::IS_FINAL)?.bool()?;
+    let source = df.column(schema::kline::SOURCE)?.str()?;
+
+    let mut klines = Vec::with_capacity(df.height());
+    for idx in 0..df.height() {
+        let interval_text = required_str(interval.get(idx), schema::kline::INTERVAL)?;
+        let interval_value = interval_text
+            .parse()
+            .map_err(|_| StorageError::InvalidValue {
+                column: schema::kline::INTERVAL,
+                value: interval_text.to_owned(),
+            })?;
+        klines.push(Kline {
+            open_time: required_i64(open_time.get(idx), schema::kline::OPEN_TIME)?,
+            close_time: required_i64(close_time.get(idx), schema::kline::CLOSE_TIME)?,
+            symbol: Symbol::from(required_str(symbol.get(idx), schema::kline::SYMBOL)?.to_owned()),
+            interval: interval_value,
+            open: required_decimal(open.get(idx), schema::kline::OPEN)?,
+            high: required_decimal(high.get(idx), schema::kline::HIGH)?,
+            low: required_decimal(low.get(idx), schema::kline::LOW)?,
+            close: required_decimal(close.get(idx), schema::kline::CLOSE)?,
+            volume: required_decimal(volume.get(idx), schema::kline::VOLUME)?,
+            quote_volume: required_decimal(quote_volume.get(idx), schema::kline::QUOTE_VOLUME)?,
+            trade_count: required_i64(trade_count.get(idx), schema::kline::TRADE_COUNT)?,
+            taker_buy_volume: required_decimal(
+                taker_buy_volume.get(idx),
+                schema::kline::TAKER_BUY_VOLUME,
+            )?,
+            taker_buy_quote_volume: required_decimal(
+                taker_buy_quote_volume.get(idx),
+                schema::kline::TAKER_BUY_QUOTE_VOLUME,
+            )?,
+            is_final: required_bool(is_final.get(idx), schema::kline::IS_FINAL)?,
+            source: required_str(source.get(idx), schema::kline::SOURCE)?.to_owned(),
+        });
+    }
+    Ok(klines)
+}
+
 pub fn scan_ticks(
     path: impl AsRef<Path>,
     symbols: &[&str],
@@ -298,6 +365,38 @@ pub fn scan_ticks(
     }
 
     Ok(lf)
+}
+
+fn required_i64(value: Option<i64>, column: &'static str) -> StorageResult<i64> {
+    value.ok_or_else(|| StorageError::InvalidValue {
+        column,
+        value: "null".to_owned(),
+    })
+}
+
+fn required_str<'a>(value: Option<&'a str>, column: &'static str) -> StorageResult<&'a str> {
+    value.ok_or_else(|| StorageError::InvalidValue {
+        column,
+        value: "null".to_owned(),
+    })
+}
+
+fn required_bool(value: Option<bool>, column: &'static str) -> StorageResult<bool> {
+    value.ok_or_else(|| StorageError::InvalidValue {
+        column,
+        value: "null".to_owned(),
+    })
+}
+
+fn required_decimal(value: Option<f64>, column: &'static str) -> StorageResult<Decimal> {
+    let value = value.ok_or_else(|| StorageError::InvalidValue {
+        column,
+        value: "null".to_owned(),
+    })?;
+    Decimal::from_f64(value).ok_or_else(|| StorageError::InvalidValue {
+        column,
+        value: value.to_string(),
+    })
 }
 
 fn tick_source_to_str(source: TickSource) -> &'static str {
@@ -425,6 +524,9 @@ mod tests {
         Kline::write_feather(&path, &klines).unwrap();
         let df = read_ipc(&path).unwrap();
         assert_eq!(df.height(), 1);
+        let restored =
+            read_klines_ipc(&path, &["BTCUSDT"], Some(KlineInterval::M1), None, None).unwrap();
+        assert_eq!(restored, klines);
         let _ = std::fs::remove_file(path);
     }
 }

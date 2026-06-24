@@ -4006,11 +4006,14 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "rust_decimal",
+ "serde_json",
  "toml",
  "wt-backtest",
  "wt-core",
  "wt-engine",
  "wt-report",
+ "wt-storage",
 ]
 
 [[package]]
