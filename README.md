@@ -4,7 +4,7 @@ Rust implementation prototype inspired by WonderTrader, focused on Binance USDâ“
 
 ## Current status
 
-Phase 0 through Phase 6 are implemented.
+Phase 0 through Phase 7 are implemented.
 
 ### Phase 0
 
@@ -78,6 +78,16 @@ The workspace contains the project skeleton and shared core domain types:
 - Total return, annualized return, annualized volatility, Sharpe ratio, max drawdown, Calmar ratio.
 - Win rate, profit factor, payoff ratio, average trade PnL, trade count, and total fees.
 - Serializable `MetricsSummary` and `ReportConfig`.
+
+### Phase 7
+
+`wt-execution` provides a dry-run execution MVP:
+
+- `ExecutionAdapter` trait for future Binance signed REST/WebSocket adapters.
+- `TargetPositionExecutor` for target-position diffing into market orders.
+- `SymbolExecutionRules` for min quantity, step size, and min notional checks.
+- `DryRunExecutionAdapter` that records filled orders without touching real accounts.
+- Unit tests for precision normalization, order submission, and small-order filtering.
 
 ```bash
 cargo test

@@ -3915,6 +3915,8 @@ dependencies = [
 name = "wt-execution"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "rust_decimal",
  "wt-core",
 ]
 
