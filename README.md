@@ -4,7 +4,7 @@ Rust implementation prototype inspired by WonderTrader, focused on Binance USDâ“
 
 ## Current status
 
-Phase 0 through Phase 4 are implemented.
+Phase 0 through Phase 5 are implemented.
 
 ### Phase 0
 
@@ -59,6 +59,16 @@ The workspace contains the project skeleton and shared core domain types:
 - `EveryIntervalScheduler` for simple interval-based schedule generation.
 - `MomentumRankSelStrategy` example for cross-sectional long/short momentum ranking.
 - Unit tests for SEL subscriptions and long/short/flat target generation.
+
+### Phase 5
+
+`wt-backtest` provides:
+
+- `run_cta_backtest` to replay sorted `MarketEvent`s through `CtaEngine`.
+- Target-position matching with configurable taker fee rate and slippage bps.
+- Linear futures-style portfolio accounting with realized/unrealized PnL and equity snapshots.
+- Trade and final-position outputs.
+- Unit tests for portfolio PnL and MA-cross CTA backtest execution.
 
 ```bash
 cargo test

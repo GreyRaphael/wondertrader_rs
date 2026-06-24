@@ -8,4 +8,7 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+anyhow.workspace = true
+rust_decimal.workspace = true
 wt-core.workspace = true
+wt-engine = { path = "../wt-engine" }
